@@ -31,13 +31,13 @@ struct PredictionInput {
 }
 
 impl Prediction {
-    pub fn create_from_model_details(
+    pub async fn create_from_model_details(
         owner: &str,
         name: &str,
         input: Box<dyn Serialize>,
     ) -> anyhow::Result<Prediction> {
         let api_key = api_key()?;
-        let model = Model::get(owner, name)?;
+        let model = Model::get(owner, name).await?;
 
         let version = model.latest_version.id;
 
@@ -68,8 +68,8 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_create_prediction() {
+    #[tokio::test]
+    async fn test_create_prediction() {
         #[derive(Serialize)]
         struct EmbeddingsInput {
             texts: String,
@@ -85,7 +85,8 @@ mod tests {
             convert_to_numpy: false,
         });
 
-        let prediction =
-            Prediction::create_from_model_details("nateraw", "bge-large-en-v1.5", input).unwrap();
+        Prediction::create_from_model_details("nateraw", "bge-large-en-v1.5", input)
+            .await
+            .unwrap();
     }
 }
