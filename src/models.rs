@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use isahc::http::StatusCode;
 use isahc::{prelude::*, Request};
 use serde::Deserialize;
 use serde_json::Value;
@@ -14,7 +13,7 @@ pub struct ModelVersionError {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ModelVersion {
-    id: String,
+    pub(crate) id: String,
     created_at: String,
     cog_version: String,
     openapi_schema: serde_json::Value,
@@ -28,7 +27,7 @@ pub struct ModelVersions {
 }
 
 #[derive(Deserialize, Debug)]
-struct Model {
+pub struct Model {
     url: String,
     owner: String,
     name: String,
@@ -40,7 +39,7 @@ struct Model {
     run_count: usize,
     cover_image_url: String,
     default_example: Value,
-    latest_version: ModelVersion,
+    pub(crate) latest_version: ModelVersion,
 }
 
 impl Model {
