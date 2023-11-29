@@ -20,24 +20,36 @@
 //! use replicate_rs::predictions::PredictionClient;
 //! use serde::Serialize;
 //!
-//! let client = ReplicateClient::new()?;
+//! let client = ReplicateClient::new().unwrap();
 //! let prediction_client = PredictionClient::from(client);
 //!
 //! #[derive(Serialize)]
 //! struct HelloWorldInput {
-//!     text: "kyle"
+//!     text: String
 //! }
 //!
-//! // Create the prediction
-//! let prediction = prediction_client.create("replicate", "hello-world", prediction_input).await?;
+//! // The library is async agnostic, so you should be able to use any async runtime you please
+//! tokio_test::block_on(async move {
 //!
-//! // Refresh the data
-//! prediction.reload()
+//!     // Create the prediction
+//!     let prediction_input = Box::new(HelloWorldInput{ text: "kyle".to_string() });
+//!     let mut prediction = prediction_client
+//!         .create(
+//!             "replicate",
+//!             "hello-world",
+//!             prediction_input
+//!         )
+//!         .await
+//!         .unwrap();
+//!
+//!     // Refresh the data
+//!     prediction.reload().await;
+//! })
 //! ```
 
-mod client;
-mod models;
-mod predictions;
+pub mod client;
+pub mod models;
+pub mod predictions;
 
 use std::env::var;
 use std::sync::OnceLock;

@@ -21,3 +21,4 @@ futures-lite = "2.0.1"
 [dev-dependencies]
 tokio = { version = "1.34.0", features = ["rt-multi-thread", "macros"] }
 httpmock = "0.6.0"
+tokio-test = "0.4.2"
