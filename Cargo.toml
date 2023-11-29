@@ -4,20 +4,19 @@ version = "0.0.1"
 edition = "2021"
 authors = ["KCaverly"]
 keywords = ["replicate", "machine-learning"]
-categories = [""]
 license = "MIT"
 description = "A minimal async http client for Replicate"
 repository = "https://github.com/KCaverly/replicate-rs"
 readme = "README.md"
 
 [dependencies]
-anyhow = "*"
+anyhow = "1.0.75"
 lazy_static = "1.4.0"
 isahc = "1.7.2"
 serde = {version = "1.0.193", features = ["derive"]}
 serde_json = "1.0"
-erased-serde = "*"
-futures-lite = "*"
+erased-serde = "0.3.31"
+futures-lite = "2.0.1"
 
 [dev-dependencies]
 tokio = { version = "1.34.0", features = ["rt-multi-thread", "macros"] }
