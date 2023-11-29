@@ -1,7 +1,7 @@
 use crate::{api_key, base_url};
 use anyhow::anyhow;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ReplicateClient {
     api_key: Option<&'static str>,
     base_url: String,
