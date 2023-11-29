@@ -1,7 +1,14 @@
 [package]
-name = "replicate-rs"
-version = "0.1.0"
+name = "replicate"
+version = "0.0.1"
 edition = "2021"
+authors = ["KCaverly"]
+keywords = ["replicate", "machine-learning"]
+categories = [""]
+license = "MIT"
+description = "A minimal async http client for Replicate"
+repository = "https://github.com/KCaverly/replicate-rs"
+readme = "README.md"
 
 [dependencies]
 anyhow = "*"
