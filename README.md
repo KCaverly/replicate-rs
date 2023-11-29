@@ -4,4 +4,31 @@ Provides simple type safe functionality for interacting with Replicate models wi
 
 <a href="https://crates.io/crates/replicate-rs"><img src="https://img.shields.io/crates/v/replicate-rs"></a>
 
+## API Coverage
 
+#### Predictions
+- [ ] [Create a Prediction](https://replicate.com/docs/reference/http#predictions.create)
+- [ ] [Get a Prediction](https://replicate.com/docs/reference/http#predictions.get)
+- [ ] [List Predictions](https://replicate.com/docs/reference/http#predictions.list)
+- [ ] [Cancel a Prediction](https://replicate.com/docs/reference/http#predictions.cancel)
+
+#### Models
+- [ ] [Create a Model](https://replicate.com/docs/reference/http#models.create)
+- [ ] [Get a Model](https://replicate.com/docs/reference/http#models.get)
+- [ ] [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
+- [ ] [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
+- [ ] [Delete a Model Version](https://replicate.com/docs/reference/http#models.versions.delete)
+- [ ] [List Public Models](https://replicate.com/docs/reference/http#models.list)
+
+#### Collections
+- [ ] [Get a Collection of Models](https://replicate.com/docs/reference/http#collections.get)
+- [ ] [List Collection of Models](https://replicate.com/docs/reference/http#collections.list)
+
+#### Hardware
+- [ ] [List available hardware for a Model](https://replicate.com/docs/reference/http#hardware.list)
+
+#### Training
+- [ ] [Create a Training](https://replicate.com/docs/reference/http#trainings.create)
+- [ ] [Get a Training](https://replicate.com/docs/reference/http#trainings.get)
+- [ ] [List Trainings](https://replicate.com/docs/reference/http#trainings.list)
+- [ ] [Cancel a Training](https://replicate.com/docs/reference/http#trainings.cancel)

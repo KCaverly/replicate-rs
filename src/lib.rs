@@ -16,12 +16,12 @@
 //! Create a prediction, and get refreshed prediction data.
 //!
 //! ```rust
-//! use replicate_rs::client::ReplicateClient;
+//! use replicate_rs::config::ReplicateConfig;
 //! use replicate_rs::predictions::PredictionClient;
 //! use serde::Serialize;
 //!
-//! let client = ReplicateClient::new().unwrap();
-//! let prediction_client = PredictionClient::from(client);
+//! let config = ReplicateConfig::new().unwrap();
+//! let prediction_client = PredictionClient::from(config);
 //!
 //! #[derive(Serialize)]
 //! struct HelloWorldInput {
@@ -47,7 +47,9 @@
 //! })
 //! ```
 
-pub mod client;
+#![warn(missing_docs)]
+
+pub mod config;
 pub mod models;
 pub mod predictions;
 

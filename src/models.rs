@@ -3,9 +3,8 @@ use futures_lite::io::AsyncReadExt;
 use isahc::{prelude::*, Request};
 use serde::Deserialize;
 use serde_json::Value;
-use std::io::Read;
 
-use crate::client::ReplicateClient;
+use crate::config::ReplicateConfig;
 
 #[derive(Debug, Deserialize)]
 pub struct ModelVersionError {
@@ -14,17 +13,17 @@ pub struct ModelVersionError {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ModelVersion {
-    pub(crate) id: String,
-    created_at: String,
-    cog_version: String,
-    openapi_schema: serde_json::Value,
+    pub id: String,
+    pub created_at: String,
+    pub cog_version: String,
+    pub openapi_schema: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ModelVersions {
-    next: Option<String>,
-    previous: Option<String>,
-    results: Vec<ModelVersion>,
+    pub next: Option<String>,
+    pub previous: Option<String>,
+    pub results: Vec<ModelVersion>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -44,11 +43,11 @@ pub struct Model {
 }
 
 pub struct ModelClient {
-    client: ReplicateClient,
+    client: ReplicateConfig,
 }
 
 impl ModelClient {
-    pub fn from(client: ReplicateClient) -> Self {
+    pub fn from(client: ReplicateConfig) -> Self {
         ModelClient { client }
     }
 
@@ -138,7 +137,7 @@ mod tests {
             }));
         });
 
-        let client = ReplicateClient::test(mock_server.base_url()).unwrap();
+        let client = ReplicateConfig::test(mock_server.base_url()).unwrap();
         let model_client = ModelClient::from(client);
         let model = model_client.get("replicate", "hello-world").await.unwrap();
 
@@ -166,7 +165,7 @@ mod tests {
             }));
         });
 
-        let client = ReplicateClient::test(mock_server.base_url()).unwrap();
+        let client = ReplicateConfig::test(mock_server.base_url()).unwrap();
         let model_client = ModelClient::from(client);
         let model = model_client
             .list_versions("replicate", "hello-world")
@@ -197,7 +196,7 @@ mod tests {
             }));
         });
 
-        let client = ReplicateClient::test(mock_server.base_url()).unwrap();
+        let client = ReplicateConfig::test(mock_server.base_url()).unwrap();
         let model_client = ModelClient::from(client);
         let model = model_client
             .get_latest_version("replicate", "hello-world")

@@ -2,25 +2,25 @@ use crate::{api_key, base_url};
 use anyhow::anyhow;
 
 #[derive(Clone, Debug)]
-pub struct ReplicateClient {
+pub struct ReplicateConfig {
     api_key: Option<&'static str>,
     base_url: String,
 }
 
-impl Default for ReplicateClient {
+impl Default for ReplicateConfig {
     fn default() -> Self {
-        ReplicateClient {
+        ReplicateConfig {
             api_key: None,
             base_url: base_url().to_string(),
         }
     }
 }
 
-impl ReplicateClient {
+impl ReplicateConfig {
     pub fn new() -> anyhow::Result<Self> {
         let api_key = api_key()?;
         let base_url = base_url().to_string();
-        anyhow::Ok(ReplicateClient {
+        anyhow::Ok(ReplicateConfig {
             api_key: Some(api_key),
             base_url,
         })
@@ -28,7 +28,7 @@ impl ReplicateClient {
 
     #[cfg(test)]
     pub fn test(base_url: String) -> anyhow::Result<Self> {
-        anyhow::Ok(ReplicateClient {
+        anyhow::Ok(ReplicateConfig {
             api_key: Some("test-api-key"),
             base_url,
         })

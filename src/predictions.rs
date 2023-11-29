@@ -3,9 +3,10 @@
 //! This includes the following:
 //! - [Create Prediction](https://replicate.com/docs/reference/http#predictions.create)
 //! - [Get Prediction](https://replicate.com/docs/reference/http#predictions.get)
+//! - [List Predictions](https://replicate.com/docs/reference/http#predictions.list)
 //!
 
-use crate::client::ReplicateClient;
+use crate::config::ReplicateConfig;
 
 use erased_serde::Serialize;
 use futures_lite::io::AsyncReadExt;
@@ -15,23 +16,64 @@ use serde_json::Value;
 use crate::models::ModelClient;
 use crate::{api_key, base_url};
 
-#[derive(Debug)]
-pub struct PredictionClient {
-    client: ReplicateClient,
+/// Status of a retrieved or created prediction
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum PredictionStatus {
+    /// The prediction is starting up. If this status lasts longer than a few seconds, then it's
+    /// typically because a new worker is being started to run the prediction.
+    Starting,
+    /// The `predict()` method of the model is currently running.
+    Processing,
+    /// The prediction completed successfully.
+    Succeeded,
+    /// The prediction was canceled by its creator.
+    Failed,
+    /// The prediction was canceled by its creator.
+    Canceled,
 }
 
+/// Provided urls to either cancel or retrieve updated details for the specific prediction.
+#[derive(serde::Deserialize, Debug)]
+pub struct PredictionUrls {
+    /// Url endpoint to cancel the specific prediction
+    pub cancel: String,
+    /// Url endpoint to retrieve the specific prediction
+    pub get: String,
+}
+
+/// Details for a specific prediction
 #[derive(serde::Deserialize, Debug)]
 pub struct Prediction {
+    /// Id of the prediction
     pub id: String,
+    /// Model used during the prediction
     pub model: String,
+    /// Specific version used during prediction
     pub version: String,
+    /// The inputs provided for the specific prediction
     pub input: Value,
+    /// The current status of the prediction
     pub status: PredictionStatus,
+    /// The created time for the prediction
     pub created_at: String,
+    /// Urls to either retrieve or cancel details for this prediction
     pub urls: PredictionUrls,
 }
 
+/// Paginated list of available predictions
+#[derive(serde::Deserialize, Debug)]
+pub struct Predictions {
+    // Identify for status in pagination
+    next: Option<String>,
+    // Identify for status of pagination
+    previous: Option<String>,
+    // List of predictions
+    results: Vec<Prediction>,
+}
+
 impl Prediction {
+    /// Leverage the get url provided, to refresh struct attributes
     pub async fn reload(&mut self) -> anyhow::Result<()> {
         let api_key = api_key()?;
         let endpoint = self.urls.get.clone();
@@ -50,20 +92,10 @@ impl Prediction {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum PredictionStatus {
-    Starting,
-    Processing,
-    Succeeded,
-    Failed,
-    Canceled,
-}
-
-#[derive(serde::Deserialize, Debug)]
-pub struct PredictionUrls {
-    pub cancel: String,
-    pub get: String,
+/// A client namespace for interacting with 'predictions' endpoint
+#[derive(Debug)]
+pub struct PredictionClient {
+    config: ReplicateConfig,
 }
 
 #[derive(serde::Serialize)]
@@ -73,9 +105,11 @@ struct PredictionInput {
 }
 
 impl PredictionClient {
-    pub fn from(client: ReplicateClient) -> Self {
-        PredictionClient { client }
+    /// Create a new `PredictionClient` based upon a `ReplicateConfig` object
+    pub fn from(config: ReplicateConfig) -> Self {
+        PredictionClient { config }
     }
+    /// Create a new prediction
     pub async fn create(
         &self,
         owner: &str,
@@ -85,7 +119,7 @@ impl PredictionClient {
         let api_key = api_key()?;
         let base_url = base_url();
 
-        let model_client = ModelClient::from(self.client.clone());
+        let model_client = ModelClient::from(self.config.clone());
         let version = model_client.get_latest_version(owner, name).await?.id;
 
         let endpoint = format!("{base_url}/predictions");
@@ -105,9 +139,10 @@ impl PredictionClient {
         anyhow::Ok(prediction)
     }
 
+    /// Get details for an existing prediction
     pub async fn get(&self, id: String) -> anyhow::Result<Prediction> {
-        let api_key = self.client.get_api_key()?;
-        let base_url = self.client.get_base_url();
+        let api_key = self.config.get_api_key()?;
+        let base_url = self.config.get_base_url();
 
         let endpoint = format!("{base_url}/predictions/{id}");
         let mut response = Request::get(endpoint)
@@ -123,12 +158,31 @@ impl PredictionClient {
 
         anyhow::Ok(prediction)
     }
+
+    /// List all existing predictions for the current user
+    pub async fn list(&self) -> anyhow::Result<Predictions> {
+        let api_key = self.config.get_api_key()?;
+        let base_url = self.config.get_base_url();
+
+        let endpoint = format!("{base_url}/predictions");
+        let mut response = Request::get(endpoint)
+            .header("Authorization", format!("Token {api_key}"))
+            .body({})?
+            .send_async()
+            .await?;
+
+        let mut data = String::new();
+        response.body_mut().read_to_string(&mut data).await?;
+
+        let predictions: Predictions = serde_json::from_str(data.as_str())?;
+
+        anyhow::Ok(predictions)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use httpmock::prelude::*;
-    use serde::Serialize;
     use serde_json::json;
 
     use super::*;
@@ -159,11 +213,10 @@ mod tests {
             ));
         });
 
-        let mock_url = server.base_url();
-        let client = ReplicateClient::test(server.base_url()).unwrap();
+        let client = ReplicateConfig::test(server.base_url()).unwrap();
 
         let prediction_client = PredictionClient::from(client);
-        let prediction = prediction_client.get("1234".to_string()).await.unwrap();
+        prediction_client.get("1234".to_string()).await.unwrap();
 
         prediction_mock.assert();
     }
@@ -172,7 +225,7 @@ mod tests {
     async fn test_create() {
         let server = MockServer::start();
 
-        let prediction_mock = server.mock(|when, then| {
+        server.mock(|when, then| {
             when.method(POST).path("/predictions");
             then.status(200).json_body_obj(&json!(
                 {
@@ -194,7 +247,7 @@ mod tests {
             ));
         });
 
-        let model_mock = server.mock(|when, then| {
+        server.mock(|when, then| {
             when.method(GET)
                 .path("/models/replicate/hello-world/versions");
 
@@ -210,11 +263,10 @@ mod tests {
             }));
         });
 
-        let mock_url = server.base_url();
-        let client = ReplicateClient::test(server.base_url()).unwrap();
+        let client = ReplicateConfig::test(server.base_url()).unwrap();
 
         let prediction_client = PredictionClient::from(client);
-        let prediction = prediction_client
+        prediction_client
             .create(
                 "replicate",
                 "hello-world",
@@ -225,10 +277,62 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_list_predictions() {
+        let server = MockServer::start();
+
+        server.mock(|when, then| {
+            when.method(GET).path("/predictions");
+            then.status(200).json_body_obj(&json!(
+                { "next": null,
+                  "previous": null,
+                  "results": [
+                    {
+                        "id": "gm3qorzdhgbfurvjtvhg6dckhu",
+                        "model": "replicate/hello-world",
+                        "version": "5c7d5dc6dd8bf75c1acaa8565735e7986bc5b66206b55cca93cb72c9bf15ccaa",
+                        "input": {
+                            "text": "Alice"
+                        },
+                        "logs": "",
+                        "error": null,
+                        "status": "starting",
+                        "created_at": "2023-09-08T16:19:34.765994657Z",
+                        "urls": {
+                            "cancel": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu/cancel",
+                            "get": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu"
+                        }
+                    },
+                    {
+                        "id": "gm3qorzdhgbfurvjtvhg6dckhu",
+                        "model": "replicate/hello-world",
+                        "version": "5c7d5dc6dd8bf75c1acaa8565735e7986bc5b66206b55cca93cb72c9bf15ccaa",
+                        "input": {
+                            "text": "Alice"
+                        },
+                        "logs": "",
+                        "error": null,
+                        "status": "starting",
+                        "created_at": "2023-09-08T16:19:34.765994657Z",
+                        "urls": {
+                            "cancel": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu/cancel",
+                            "get": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu"
+                        }
+                    }
+                ]}
+            ));
+        });
+
+        let client = ReplicateConfig::test(server.base_url()).unwrap();
+
+        let prediction_client = PredictionClient::from(client);
+        let predictions = prediction_client.list().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn test_create_and_reload() {
         let server = MockServer::start();
 
-        let prediction_mock = server.mock(|when, then| {
+        server.mock(|when, then| {
             when.method(POST).path("/predictions");
             then.status(200).json_body_obj(&json!(
                 {
@@ -250,7 +354,7 @@ mod tests {
             ));
         });
 
-        let model_mock = server.mock(|when, then| {
+        server.mock(|when, then| {
             when.method(GET)
                 .path("/models/replicate/hello-world/versions");
 
@@ -266,8 +370,7 @@ mod tests {
             }));
         });
 
-        let mock_url = server.base_url();
-        let client = ReplicateClient::test(server.base_url()).unwrap();
+        let client = ReplicateConfig::test(server.base_url()).unwrap();
 
         let prediction_client = PredictionClient::from(client);
         let mut prediction = prediction_client
