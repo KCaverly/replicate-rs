@@ -7,10 +7,10 @@ Provides simple type safe functionality for interacting with Replicate models wi
 ## API Coverage
 
 #### Predictions
-- [ ] [Create a Prediction](https://replicate.com/docs/reference/http#predictions.create)
-- [ ] [Get a Prediction](https://replicate.com/docs/reference/http#predictions.get)
-- [ ] [List Predictions](https://replicate.com/docs/reference/http#predictions.list)
-- [ ] [Cancel a Prediction](https://replicate.com/docs/reference/http#predictions.cancel)
+- [x] [Create a Prediction](https://replicate.com/docs/reference/http#predictions.create)
+- [x] [Get a Prediction](https://replicate.com/docs/reference/http#predictions.get)
+- [x] [List Predictions](https://replicate.com/docs/reference/http#predictions.list)
+- [x] [Cancel a Prediction](https://replicate.com/docs/reference/http#predictions.cancel)
 
 #### Models
 - [ ] [Create a Model](https://replicate.com/docs/reference/http#models.create)

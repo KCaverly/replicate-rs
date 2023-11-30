@@ -4,6 +4,7 @@
 //! - [Create Prediction](https://replicate.com/docs/reference/http#predictions.create)
 //! - [Get Prediction](https://replicate.com/docs/reference/http#predictions.get)
 //! - [List Predictions](https://replicate.com/docs/reference/http#predictions.list)
+//! - [Cancel Prediction](https://replicate.com/docs/reference/http#predictions.cancel)
 //!
 
 use crate::config::ReplicateConfig;
