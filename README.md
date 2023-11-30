@@ -19,7 +19,7 @@ Provides a simple wrapper for interacting with Replicate models with [serde](htt
 - [x] [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
 - [x] [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
 - [ ] [Delete a Model Version](https://replicate.com/docs/reference/http#models.versions.delete)
-- [x] [List Public Models](https://replicate.com/docs/reference/http#models.list)
+- [ ] [List Public Models](https://replicate.com/docs/reference/http#models.list)
 
 #### Collections
 - [ ] [Get a Collection of Models](https://replicate.com/docs/reference/http#collections.get)
