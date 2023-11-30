@@ -126,16 +126,15 @@ impl PredictionClient {
         let endpoint = format!("{base_url}/predictions");
         let input = PredictionInput { version, input };
         let body = serde_json::to_string(&input)?;
-        let mut response = Request::post(endpoint)
+        let response = Request::post(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body(body)?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
-
-        let prediction: Prediction = serde_json::from_str(data.as_str())?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
+        let prediction: Prediction = serde_json::from_slice(&bytes)?;
 
         anyhow::Ok(prediction)
     }
@@ -146,16 +145,16 @@ impl PredictionClient {
         let base_url = self.config.get_base_url();
 
         let endpoint = format!("{base_url}/predictions/{id}");
-        let mut response = Request::get(endpoint)
+        let response = Request::get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body({})?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
 
-        let prediction: Prediction = serde_json::from_str(data.as_str())?;
+        let prediction: Prediction = serde_json::from_slice(&bytes)?;
 
         anyhow::Ok(prediction)
     }
@@ -166,16 +165,15 @@ impl PredictionClient {
         let base_url = self.config.get_base_url();
 
         let endpoint = format!("{base_url}/predictions");
-        let mut response = Request::get(endpoint)
+        let response = Request::get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body({})?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
-
-        let predictions: Predictions = serde_json::from_str(data.as_str())?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
+        let predictions: Predictions = serde_json::from_slice(&bytes)?;
 
         anyhow::Ok(predictions)
     }
@@ -185,16 +183,16 @@ impl PredictionClient {
         let api_key = self.config.get_api_key()?;
         let base_url = self.config.get_base_url();
         let endpoint = format!("{base_url}/predictions/{id}/cancel");
-        let mut response = Request::post(endpoint)
+        let response = Request::post(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body({})?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
+        let prediction: Prediction = serde_json::from_slice(&bytes)?;
 
-        let prediction: Prediction = serde_json::from_str(data.as_str())?;
         anyhow::Ok(prediction)
     }
 }
