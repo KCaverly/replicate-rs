@@ -14,11 +14,11 @@ Provides simple type safe functionality for interacting with Replicate models wi
 
 #### Models
 - [ ] [Create a Model](https://replicate.com/docs/reference/http#models.create)
-- [ ] [Get a Model](https://replicate.com/docs/reference/http#models.get)
-- [ ] [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
-- [ ] [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
+- [x] [Get a Model](https://replicate.com/docs/reference/http#models.get)
+- [x] [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
+- [x] [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
 - [ ] [Delete a Model Version](https://replicate.com/docs/reference/http#models.versions.delete)
-- [ ] [List Public Models](https://replicate.com/docs/reference/http#models.list)
+- [x] [List Public Models](https://replicate.com/docs/reference/http#models.list)
 
 #### Collections
 - [ ] [Get a Collection of Models](https://replicate.com/docs/reference/http#collections.get)

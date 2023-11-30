@@ -93,7 +93,7 @@ impl Prediction {
     }
 }
 
-/// A client namespace for interacting with 'predictions' endpoint
+/// A client for interacting with 'predictions' endpoint
 #[derive(Debug)]
 pub struct PredictionClient {
     config: ReplicateConfig,
