@@ -178,6 +178,24 @@ impl PredictionClient {
 
         anyhow::Ok(predictions)
     }
+
+    /// Cancel an existing prediction
+    pub async fn cancel(&self, id: String) -> anyhow::Result<Prediction> {
+        let api_key = self.config.get_api_key()?;
+        let base_url = self.config.get_base_url();
+        let endpoint = format!("{base_url}/predictions/{id}/cancel");
+        let mut response = Request::post(endpoint)
+            .header("Authorization", format!("Token {api_key}"))
+            .body({})?
+            .send_async()
+            .await?;
+
+        let mut data = String::new();
+        response.body_mut().read_to_string(&mut data).await?;
+
+        let prediction: Prediction = serde_json::from_str(data.as_str())?;
+        anyhow::Ok(prediction)
+    }
 }
 
 #[cfg(test)]
@@ -325,7 +343,7 @@ mod tests {
         let client = ReplicateConfig::test(server.base_url()).unwrap();
 
         let prediction_client = PredictionClient::from(client);
-        let predictions = prediction_client.list().await.unwrap();
+        prediction_client.list().await.unwrap();
     }
 
     #[tokio::test]
@@ -383,5 +401,39 @@ mod tests {
             .unwrap();
 
         prediction.reload().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_cancel() {
+        let server = MockServer::start();
+
+        let prediction_mock = server.mock(|when, then| {
+            when.method(POST).path("/predictions/1234/cancel");
+            then.status(200).json_body_obj(&json!(
+                {
+                    "id": "1234",
+                    "model": "replicate/hello-world",
+                    "version": "5c7d5dc6dd8bf75c1acaa8565735e7986bc5b66206b55cca93cb72c9bf15ccaa",
+                    "input": {
+                        "text": "Alice"
+                    },
+                    "logs": "",
+                    "error": null,
+                    "status": "starting",
+                    "created_at": "2023-09-08T16:19:34.765994657Z",
+                    "urls": {
+                        "cancel": "https://api.replicate.com/v1/predictions/1234/cancel",
+                        "get": "https://api.replicate.com/v1/predictions/1234"
+                    }
+                }
+            ));
+        });
+
+        let config = ReplicateConfig::test(server.base_url()).unwrap();
+        let prediction_client = PredictionClient::from(config);
+
+        prediction_client.cancel("1234".to_string()).await.unwrap();
+
+        prediction_mock.assert();
     }
 }
