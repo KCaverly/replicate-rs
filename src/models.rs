@@ -87,16 +87,16 @@ impl ModelClient {
         let api_key = self.client.get_api_key()?;
         let base_url = self.client.get_base_url();
         let endpoint = format!("{base_url}/models/{owner}/{name}");
-        let mut response = Request::get(endpoint)
+        let response = Request::get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body({})?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
 
-        let model: Model = serde_json::from_str(data.as_str())?;
+        let model: Model = serde_json::from_slice(&bytes)?;
         anyhow::Ok(model)
     }
 
@@ -110,16 +110,16 @@ impl ModelClient {
         let api_key = self.client.get_api_key()?;
         let base_url = self.client.get_base_url();
         let endpoint = format!("{base_url}/models/{owner}/{name}/versions/{version_id}");
-        let mut response = Request::get(endpoint)
+        let response = Request::get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body({})?
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
+        let mut bytes = Vec::new();
+        response.into_body().read_to_end(&mut bytes).await?;
 
-        let model: Model = serde_json::from_str(data.as_str())?;
+        let model: Model = serde_json::from_slice(&bytes)?;
         anyhow::Ok(model)
     }
 
@@ -148,14 +148,14 @@ impl ModelClient {
             .send_async()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
+        let mut bytes = Vec::new();
+        response.body_mut().read_to_end(&mut bytes).await?;
 
         if response.status().is_success() {
-            let data: ModelVersions = serde_json::from_str(data.as_str())?;
+            let data: ModelVersions = serde_json::from_slice(&bytes)?;
             anyhow::Ok(data)
         } else {
-            let data: ModelVersionError = serde_json::from_str(data.as_str())?;
+            let data: ModelVersionError = serde_json::from_slice(&bytes)?;
             Err(anyhow!(data.detail))
         }
     }
