@@ -65,12 +65,12 @@ pub struct Prediction {
 /// Paginated list of available predictions
 #[derive(serde::Deserialize, Debug)]
 pub struct Predictions {
-    // Identify for status in pagination
-    next: Option<String>,
-    // Identify for status of pagination
-    previous: Option<String>,
-    // List of predictions
-    results: Vec<Prediction>,
+    /// Identify for status in pagination
+    pub next: Option<String>,
+    /// Identify for status of pagination
+    pub previous: Option<String>,
+    /// List of predictions
+    pub results: Vec<Prediction>,
 }
 
 impl Prediction {
