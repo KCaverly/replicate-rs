@@ -1,3 +1,10 @@
+//! Utilities for interacting with models endpoints.
+//!
+//! This includes the following:
+//! - [Get a Model](https://replicate.com/docs/reference/http#models.get)
+//! - [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
+//! - [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
+//!
 use anyhow::anyhow;
 use futures_lite::io::AsyncReadExt;
 use isahc::{prelude::*, Request};
