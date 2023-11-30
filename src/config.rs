@@ -1,9 +1,14 @@
+//! Utilities for high level configuration for Replicate clients.
+//!
 use crate::{api_key, base_url};
 use anyhow::anyhow;
 
+/// Config for Replicate Client
 #[derive(Clone, Debug)]
 pub struct ReplicateConfig {
+    /// [API token](https://replicate.com/account/api-tokens) for replicate
     api_key: Option<&'static str>,
+    /// Endpoint url
     base_url: String,
 }
 
@@ -17,6 +22,7 @@ impl Default for ReplicateConfig {
 }
 
 impl ReplicateConfig {
+    /// Create a default config, inherits api_key from REPLICATE_API_KEY environment variable
     pub fn new() -> anyhow::Result<Self> {
         let api_key = api_key()?;
         let base_url = base_url().to_string();
