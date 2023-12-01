@@ -42,6 +42,17 @@ pub struct ModelVersions {
     pub results: Vec<ModelVersion>,
 }
 
+/// Paginated view of all available models
+#[derive(Debug, Deserialize)]
+pub struct Models {
+    /// Place in pagination
+    pub next: Option<String>,
+    /// Place in pagination
+    pub previous: Option<String>,
+    /// List of all versions available
+    pub results: Vec<Model>,
+}
+
 /// All details available for a particular Model
 #[derive(Deserialize, Debug)]
 pub struct Model {
@@ -158,6 +169,24 @@ impl ModelClient {
             let data: ModelVersionError = serde_json::from_slice(&bytes)?;
             Err(anyhow!(data.detail))
         }
+    }
+
+    /// Retrieve all publically and private available models
+    pub async fn get_models(&self) -> anyhow::Result<Models> {
+        let base_url = self.client.get_base_url();
+        let api_key = self.client.get_api_key()?;
+        let endpoint = format!("{base_url}/models");
+        let mut response = Request::get(endpoint)
+            .header("Authorization", format!("Token {api_key}"))
+            .body({})?
+            .send_async()
+            .await?;
+
+        let mut bytes = Vec::new();
+        response.body_mut().read_to_end(&mut bytes).await?;
+
+        let models: Models = serde_json::from_slice(&bytes)?;
+        anyhow::Ok(models)
     }
 }
 
@@ -296,6 +325,69 @@ mod tests {
             .get_latest_version("replicate", "hello-world")
             .await
             .unwrap();
+
+        model_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_get_models() {
+        let mock_server = MockServer::start();
+
+        // Model endpoints
+        let model_mock = mock_server.mock(|when, then| {
+            when.method(GET).path("/models");
+            then.status(200).json_body_obj(&json!({
+                    "next": "some pagination string or null",
+                    "previous": "some pagination string or null",
+            "results": [
+                {
+                "url": "https://modelhomepage.example.com",
+                "owner": "jdoe",
+                "name": "super-cool-model",
+                "description": "A model that predicts something very cool.",
+                "visibility": "public",
+                "github_url": "https://github.com/jdoe/super-cool-model",
+                "paper_url": "https://research.example.com/super-cool-model-paper.pdf",
+                "license_url": null,
+                "run_count": 420,
+                "cover_image_url": "https://cdn.example.com/images/super-cool-model-cover.jpg",
+                "default_example": {
+                    "input": "Example input data for the model."
+                },
+                "latest_version": {
+                    "id": "v1.0.0",
+                    "created_at": "2022-01-01T12:00:00Z",
+                    "cog_version": "0.2",
+                    "openapi_schema": null
+                }
+                },
+                {
+                "url": "https://anothermodelhomepage.example.com",
+                "owner": "asmith",
+                "name": "another-awesome-model",
+                "description": "This model does awesome things with data.",
+                "visibility": "private",
+                "github_url": "https://github.com/asmith/another-awesome-model",
+                "paper_url": null,
+                "license_url": "https://licenses.example.com/another-awesome-model-license.txt",
+                "run_count": 150,
+                "cover_image_url": "https://cdn.example.com/images/another-awesome-model-cover.jpg",
+                "default_example": {
+                    "input": "Some example input for this awesome model."
+                },
+                "latest_version": {
+                    "id": "v1.2.3",
+                    "created_at": "2023-02-15T08:30:00Z",
+                    "cog_version": "0.2",
+                    "openapi_schema": null
+                }
+            }
+        ]}));
+        });
+
+        let client = ReplicateConfig::test(mock_server.base_url()).unwrap();
+        let model_client = ModelClient::from(client);
+        model_client.get_models().await.unwrap();
 
         model_mock.assert();
     }
