@@ -104,7 +104,7 @@ pub struct PredictionClient {
 #[derive(serde::Serialize)]
 struct PredictionInput {
     version: String,
-    input: Box<dyn Serialize>,
+    input: serde_json::Value,
 }
 
 impl PredictionClient {
@@ -117,7 +117,7 @@ impl PredictionClient {
         &self,
         owner: &str,
         name: &str,
-        input: Box<dyn Serialize>,
+        input: serde_json::Value,
     ) -> anyhow::Result<Prediction> {
         let api_key = api_key()?;
         let base_url = base_url();
@@ -289,7 +289,7 @@ mod tests {
             .create(
                 "replicate",
                 "hello-world",
-                Box::new(json!({"text": "This is test input"})),
+                json!({"text": "This is test input"}),
             )
             .await
             .unwrap();
@@ -396,7 +396,7 @@ mod tests {
             .create(
                 "replicate",
                 "hello-world",
-                Box::new(json!({"text": "This is test input"})),
+                json!({"text": "This is test input"}),
             )
             .await
             .unwrap();

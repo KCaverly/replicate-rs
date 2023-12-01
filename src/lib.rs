@@ -19,32 +19,31 @@
 //! use replicate_rs::config::ReplicateConfig;
 //! use replicate_rs::predictions::PredictionClient;
 //! use serde::Serialize;
-//!
-//! let config = ReplicateConfig::new().unwrap();
-//! let prediction_client = PredictionClient::from(config);
-//!
-//! #[derive(Serialize)]
-//! struct HelloWorldInput {
-//!     text: String
-//! }
+//! use serde_json::json;
 //!
 //! // The library is async agnostic, so you should be able to use any async runtime you please
-//! tokio_test::block_on(async move {
+//! //tokio_test::block_on(async move {
+//! #[tokio::main]
+//! async fn main() {
+//!     tokio::spawn(async move {
 //!
-//!     // Create the prediction
-//!     let prediction_input = Box::new(HelloWorldInput{ text: "kyle".to_string() });
-//!     let mut prediction = prediction_client
-//!         .create(
-//!             "replicate",
-//!             "hello-world",
-//!             prediction_input
-//!         )
-//!         .await
-//!         .unwrap();
+//!         let config = ReplicateConfig::new().unwrap();
+//!         let prediction_client = PredictionClient::from(config);
 //!
-//!     // Refresh the data
-//!     prediction.reload().await;
-//! })
+//!         // Create the prediction
+//!         let mut prediction = prediction_client
+//!             .create(
+//!                 "replicate",
+//!                 "hello-world",
+//!                 json!({"text": "kyle"})
+//!             )
+//!             .await
+//!             .unwrap();
+//!
+//!         // Refresh the data
+//!         prediction.reload().await;
+//!     });
+//! }
 //! ```
 
 #![warn(missing_docs)]
