@@ -60,6 +60,8 @@ pub struct Prediction {
     pub created_at: String,
     /// Urls to either retrieve or cancel details for this prediction
     pub urls: PredictionUrls,
+    /// The output of the prediction if completed
+    pub output: Option<Value>,
 }
 
 /// Paginated list of available predictions
