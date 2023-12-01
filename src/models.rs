@@ -4,6 +4,7 @@
 //! - [Get a Model](https://replicate.com/docs/reference/http#models.get)
 //! - [Get a Model Version](https://replicate.com/docs/reference/http#models.versions.get)
 //! - [List a Model's Versions](https://replicate.com/docs/reference/http#models.versions.list)
+//! - [List all Public Models](https://replicate.com/docs/reference/http#models.list)
 //!
 use anyhow::anyhow;
 use futures_lite::io::AsyncReadExt;
