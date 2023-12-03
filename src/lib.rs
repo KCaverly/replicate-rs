@@ -6,7 +6,7 @@
 //!
 //! Add the following to your cargo toml
 //! ```toml
-//! replicate-rs = "0.2.0"
+//! replicate-rs = "0.7.0"
 //! ```
 //!
 //! # Examples
