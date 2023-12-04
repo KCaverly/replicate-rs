@@ -12,6 +12,7 @@ use crate::config::ReplicateConfig;
 use anyhow::anyhow;
 use bytes::Bytes;
 use eventsource_stream::{EventStream, Eventsource};
+use futures_lite::StreamExt;
 use serde_json::Value;
 
 use crate::models::ModelClient;
@@ -106,6 +107,7 @@ impl Prediction {
             let stream = client
                 .get(stream_url)
                 .header("Autorization", format!("Token {api_key}"))
+                .header("Accept", "text/event-stream")
                 .send()
                 .await?
                 .bytes_stream()
