@@ -1,6 +1,6 @@
 # replicate-rs
 A "work in progress" un-official minimal async client for [Replicate](https://replicate.com/).   
-Provides a simple wrapper for interacting with Replicate models with [serde](https://serde.rs/) and [isahc](https://docs.rs/isahc/latest/isahc/).
+Provides a simple wrapper for interacting with Replicate models with [serde](https://serde.rs/) and [reqwest](https://crates.io/crates/reqwest).
 
 <a href="https://crates.io/crates/replicate-rs"><img src="https://img.shields.io/crates/v/replicate-rs"></a>
 <a href="https://docs.rs/replicate-rs/latest/replicate_rs/"><img src="https://img.shields.io/docsrs/replicate-rs"></a>

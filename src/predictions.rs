@@ -9,9 +9,9 @@
 
 use crate::config::ReplicateConfig;
 
-use erased_serde::Serialize;
-use futures_lite::io::AsyncReadExt;
-use isahc::{prelude::*, Request};
+use anyhow::anyhow;
+use bytes::Bytes;
+use eventsource_stream::{EventStream, Eventsource};
 use serde_json::Value;
 
 use crate::models::ModelClient;
@@ -41,6 +41,8 @@ pub struct PredictionUrls {
     pub cancel: String,
     /// Url endpoint to retrieve the specific prediction
     pub get: String,
+    /// Url endpoint to receive streamed output
+    pub stream: Option<String>,
 }
 
 /// Details for a specific prediction
@@ -80,18 +82,39 @@ impl Prediction {
     pub async fn reload(&mut self) -> anyhow::Result<()> {
         let api_key = api_key()?;
         let endpoint = self.urls.get.clone();
-        let mut response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut data = String::new();
-        response.body_mut().read_to_string(&mut data).await?;
-
+        let data = response.text().await?;
         let prediction: Prediction = serde_json::from_str(data.as_str())?;
         *self = prediction;
         anyhow::Ok(())
+    }
+
+    /// Get the stream from a prediction
+    pub async fn get_stream(
+        &mut self,
+    ) -> anyhow::Result<EventStream<impl futures_lite::stream::Stream<Item = reqwest::Result<Bytes>>>>
+    {
+        if let Some(stream_url) = self.urls.stream.clone() {
+            let api_key = api_key()?;
+            let client = reqwest::Client::new();
+            let stream = client
+                .get(stream_url)
+                .header("Autorization", format!("Token {api_key}"))
+                .send()
+                .await?
+                .bytes_stream()
+                .eventsource();
+
+            return anyhow::Ok(stream);
+        } else {
+            return Err(anyhow!("prediction has no stream url available"));
+        }
     }
 }
 
@@ -105,6 +128,7 @@ pub struct PredictionClient {
 struct PredictionInput {
     version: String,
     input: serde_json::Value,
+    stream: bool,
 }
 
 impl PredictionClient {
@@ -118,6 +142,7 @@ impl PredictionClient {
         owner: &str,
         name: &str,
         input: serde_json::Value,
+        stream: bool,
     ) -> anyhow::Result<Prediction> {
         let api_key = api_key()?;
         let base_url = base_url();
@@ -126,17 +151,22 @@ impl PredictionClient {
         let version = model_client.get_latest_version(owner, name).await?.id;
 
         let endpoint = format!("{base_url}/predictions");
-        let input = PredictionInput { version, input };
+        let input = PredictionInput {
+            version,
+            input,
+            stream,
+        };
         let body = serde_json::to_string(&input)?;
-        let response = Request::post(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .post(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body(body)?
-            .send_async()
+            .body(body)
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-        let prediction: Prediction = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let prediction: Prediction = serde_json::from_str(&data)?;
 
         anyhow::Ok(prediction)
     }
@@ -147,16 +177,15 @@ impl PredictionClient {
         let base_url = self.config.get_base_url();
 
         let endpoint = format!("{base_url}/predictions/{id}");
-        let response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-
-        let prediction: Prediction = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let prediction: Prediction = serde_json::from_str(&data)?;
 
         anyhow::Ok(prediction)
     }
@@ -167,15 +196,15 @@ impl PredictionClient {
         let base_url = self.config.get_base_url();
 
         let endpoint = format!("{base_url}/predictions");
-        let response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-        let predictions: Predictions = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let predictions: Predictions = serde_json::from_str(&data)?;
 
         anyhow::Ok(predictions)
     }
@@ -185,15 +214,15 @@ impl PredictionClient {
         let api_key = self.config.get_api_key()?;
         let base_url = self.config.get_base_url();
         let endpoint = format!("{base_url}/predictions/{id}/cancel");
-        let response = Request::post(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .post(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-        let prediction: Prediction = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let prediction: Prediction = serde_json::from_str(&data)?;
 
         anyhow::Ok(prediction)
     }
@@ -290,6 +319,7 @@ mod tests {
                 "replicate",
                 "hello-world",
                 json!({"text": "This is test input"}),
+                false,
             )
             .await
             .unwrap();
@@ -397,6 +427,7 @@ mod tests {
                 "replicate",
                 "hello-world",
                 json!({"text": "This is test input"}),
+                false,
             )
             .await
             .unwrap();

@@ -35,7 +35,8 @@
 //!             .create(
 //!                 "replicate",
 //!                 "hello-world",
-//!                 json!({"text": "kyle"})
+//!                 json!({"text": "kyle"}),
+//!                 false
 //!             )
 //!             .await
 //!             .unwrap();

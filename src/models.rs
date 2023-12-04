@@ -7,8 +7,6 @@
 //! - [List all Public Models](https://replicate.com/docs/reference/http#models.list)
 //!
 use anyhow::anyhow;
-use futures_lite::io::AsyncReadExt;
-use isahc::{prelude::*, Request};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -99,16 +97,15 @@ impl ModelClient {
         let api_key = self.client.get_api_key()?;
         let base_url = self.client.get_base_url();
         let endpoint = format!("{base_url}/models/{owner}/{name}");
-        let response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-
-        let model: Model = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let model: Model = serde_json::from_str(&data)?;
         anyhow::Ok(model)
     }
 
@@ -122,16 +119,15 @@ impl ModelClient {
         let api_key = self.client.get_api_key()?;
         let base_url = self.client.get_base_url();
         let endpoint = format!("{base_url}/models/{owner}/{name}/versions/{version_id}");
-        let response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.into_body().read_to_end(&mut bytes).await?;
-
-        let model: Model = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let model: Model = serde_json::from_str(&data)?;
         anyhow::Ok(model)
     }
 
@@ -154,20 +150,20 @@ impl ModelClient {
         let base_url = self.client.get_base_url();
         let api_key = self.client.get_api_key()?;
         let endpoint = format!("{base_url}/models/{owner}/{name}/versions");
-        let mut response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.body_mut().read_to_end(&mut bytes).await?;
-
-        if response.status().is_success() {
-            let data: ModelVersions = serde_json::from_slice(&bytes)?;
+        let status = response.status();
+        let data = response.text().await?;
+        if status.is_success() {
+            let data: ModelVersions = serde_json::from_str(&data)?;
             anyhow::Ok(data)
         } else {
-            let data: ModelVersionError = serde_json::from_slice(&bytes)?;
+            let data: ModelVersionError = serde_json::from_str(&data)?;
             Err(anyhow!(data.detail))
         }
     }
@@ -177,16 +173,15 @@ impl ModelClient {
         let base_url = self.client.get_base_url();
         let api_key = self.client.get_api_key()?;
         let endpoint = format!("{base_url}/models");
-        let mut response = Request::get(endpoint)
+        let client = reqwest::Client::new();
+        let response = client
+            .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
-            .body({})?
-            .send_async()
+            .send()
             .await?;
 
-        let mut bytes = Vec::new();
-        response.body_mut().read_to_end(&mut bytes).await?;
-
-        let models: Models = serde_json::from_slice(&bytes)?;
+        let data = response.text().await?;
+        let models: Models = serde_json::from_str(&data)?;
         anyhow::Ok(models)
     }
 }
