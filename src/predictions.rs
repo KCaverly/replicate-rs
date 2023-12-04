@@ -19,7 +19,7 @@ use crate::models::ModelClient;
 use crate::{api_key, base_url};
 
 /// Status of a retrieved or created prediction
-#[derive(serde::Serialize, serde::Deserialize, Debug, Eq, PartialEq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum PredictionStatus {
     /// The prediction is starting up. If this status lasts longer than a few seconds, then it's
@@ -94,6 +94,11 @@ impl Prediction {
         let prediction: Prediction = serde_json::from_str(data.as_str())?;
         *self = prediction;
         anyhow::Ok(())
+    }
+
+    /// Get the status for the current prediction
+    pub async fn get_status(&mut self) -> PredictionStatus {
+        self.status.clone()
     }
 
     /// Get the stream from a prediction
