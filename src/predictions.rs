@@ -19,7 +19,7 @@ use crate::models::ModelClient;
 use crate::{api_key, base_url};
 
 /// Status of a retrieved or created prediction
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum PredictionStatus {
     /// The prediction is starting up. If this status lasts longer than a few seconds, then it's
