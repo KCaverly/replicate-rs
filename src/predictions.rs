@@ -111,7 +111,7 @@ impl Prediction {
             let client = reqwest::Client::new();
             let stream = client
                 .get(stream_url)
-                .header("Autorization", format!("Token {api_key}"))
+                .header("Authorization", format!("Token {api_key}"))
                 .header("Accept", "text/event-stream")
                 .send()
                 .await?
