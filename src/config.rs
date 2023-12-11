@@ -1,5 +1,6 @@
 //! Utilities for high level configuration for Replicate clients.
 //!
+use crate::errors::{ReplicateError, ReplicateResult};
 use crate::{api_key, base_url};
 use anyhow::anyhow;
 
@@ -40,9 +41,9 @@ impl ReplicateConfig {
         })
     }
 
-    pub(crate) fn get_api_key(&self) -> anyhow::Result<&'static str> {
-        self.api_key.ok_or(anyhow!(
-            "REPLICATE_API_KEY not provided in environment variable"
+    pub(crate) fn get_api_key(&self) -> ReplicateResult<&'static str> {
+        self.api_key.ok_or(ReplicateError::MissingCredentials(
+            "REPLICATE_API_KEY not provided in environment variable".to_string(),
         ))
     }
 

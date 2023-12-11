@@ -11,6 +11,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::config::ReplicateConfig;
+use crate::errors::{get_error, ReplicateError, ReplicateResult};
 
 #[derive(Debug, Deserialize)]
 struct ModelVersionError {
@@ -115,7 +116,7 @@ impl ModelClient {
         owner: &str,
         name: &str,
         version_id: &str,
-    ) -> anyhow::Result<Model> {
+    ) -> ReplicateResult<Model> {
         let api_key = self.client.get_api_key()?;
         let base_url = self.client.get_base_url();
         let endpoint = format!("{base_url}/models/{owner}/{name}/versions/{version_id}");
@@ -124,11 +125,16 @@ impl ModelClient {
             .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .send()
-            .await?;
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
 
-        let data = response.text().await?;
-        let model: Model = serde_json::from_str(&data)?;
-        anyhow::Ok(model)
+        let data = response
+            .text()
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
+        let model: Model = serde_json::from_str(&data)
+            .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
+        Ok(model)
     }
 
     /// Retrieve details for latest version of a specific model
@@ -136,17 +142,16 @@ impl ModelClient {
         &self,
         owner: &str,
         name: &str,
-    ) -> anyhow::Result<ModelVersion> {
+    ) -> ReplicateResult<ModelVersion> {
         let all_versions = self.list_versions(owner, name).await?;
-        let latest_version = all_versions
-            .results
-            .get(0)
-            .ok_or(anyhow!("no versions found for {owner}/{name}"))?;
-        anyhow::Ok(latest_version.clone())
+        let latest_version = all_versions.results.get(0).ok_or(ReplicateError::Misc(
+            "no versions found for {owner}/{name}".to_string(),
+        ))?;
+        Ok(latest_version.clone())
     }
 
     /// Retrieve list of all available versions of a specific model
-    pub async fn list_versions(&self, owner: &str, name: &str) -> anyhow::Result<ModelVersions> {
+    pub async fn list_versions(&self, owner: &str, name: &str) -> ReplicateResult<ModelVersions> {
         let base_url = self.client.get_base_url();
         let api_key = self.client.get_api_key()?;
         let endpoint = format!("{base_url}/models/{owner}/{name}/versions");
@@ -155,21 +160,27 @@ impl ModelClient {
             .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .send()
-            .await?;
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
 
         let status = response.status();
-        let data = response.text().await?;
-        if status.is_success() {
-            let data: ModelVersions = serde_json::from_str(&data)?;
-            anyhow::Ok(data)
-        } else {
-            let data: ModelVersionError = serde_json::from_str(&data)?;
-            Err(anyhow!(data.detail))
-        }
+        let data = response
+            .text()
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
+
+        return match status.clone() {
+            reqwest::StatusCode::OK => {
+                let data: ModelVersions = serde_json::from_str(&data)
+                    .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
+                Ok(data)
+            }
+            _ => Err(get_error(status, data.as_str())),
+        };
     }
 
     /// Retrieve all publically and private available models
-    pub async fn get_models(&self) -> anyhow::Result<Models> {
+    pub async fn get_models(&self) -> ReplicateResult<Models> {
         let base_url = self.client.get_base_url();
         let api_key = self.client.get_api_key()?;
         let endpoint = format!("{base_url}/models");
@@ -178,11 +189,16 @@ impl ModelClient {
             .get(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .send()
-            .await?;
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
 
-        let data = response.text().await?;
-        let models: Models = serde_json::from_str(&data)?;
-        anyhow::Ok(models)
+        let data = response
+            .text()
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
+        let models: Models = serde_json::from_str(&data)
+            .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
+        Ok(models)
     }
 }
 

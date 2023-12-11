@@ -19,8 +19,10 @@ futures-lite = "2.0.1"
 reqwest = {version = "0.11.22", features = ["stream"]}
 eventsource-stream = "0.2.3"
 bytes = "1.5.0"
+thiserror = "1.0.50"
 
 [dev-dependencies]
 tokio = { version = "1.34.0", features = ["rt-multi-thread", "macros"] }
 httpmock = "0.6.0"
 tokio-test = "0.4.2"
+indoc = "2.0.4"

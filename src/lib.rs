@@ -50,16 +50,23 @@
 #![warn(missing_docs)]
 
 pub mod config;
+pub mod errors;
 pub mod models;
 pub mod predictions;
 
+use crate::errors::{ReplicateError, ReplicateResult};
 use std::env::var;
 use std::sync::OnceLock;
 
-fn api_key() -> anyhow::Result<&'static str> {
-    let api_key = var("REPLICATE_API_KEY")?;
+fn api_key() -> ReplicateResult<&'static str> {
+    let api_key = var("REPLICATE_API_KEY").map_err(|_| {
+        ReplicateError::MissingCredentials(
+            "REPLICATE_API_KEY not available in environment variables.".to_string(),
+        )
+    })?;
+
     static REPLICATE_API_KEY: OnceLock<String> = OnceLock::new();
-    anyhow::Ok(REPLICATE_API_KEY.get_or_init(|| api_key))
+    Ok(REPLICATE_API_KEY.get_or_init(|| api_key))
 }
 
 fn base_url() -> &'static str {

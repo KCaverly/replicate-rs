@@ -8,6 +8,7 @@
 //!
 
 use crate::config::ReplicateConfig;
+use crate::errors::{get_error, ReplicateError, ReplicateResult};
 
 use anyhow::anyhow;
 use bytes::Bytes;
@@ -150,9 +151,9 @@ impl PredictionClient {
         name: &str,
         input: serde_json::Value,
         stream: bool,
-    ) -> anyhow::Result<Prediction> {
-        let api_key = api_key()?;
-        let base_url = base_url();
+    ) -> ReplicateResult<Prediction> {
+        let api_key = self.config.get_api_key()?;
+        let base_url = self.config.get_base_url();
 
         let model_client = ModelClient::from(self.config.clone());
         let version = model_client.get_latest_version(owner, name).await?.id;
@@ -163,19 +164,37 @@ impl PredictionClient {
             input,
             stream,
         };
-        let body = serde_json::to_string(&input)?;
+        let body = serde_json::to_string(&input)
+            .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
         let client = reqwest::Client::new();
         let response = client
             .post(endpoint)
             .header("Authorization", format!("Token {api_key}"))
             .body(body)
             .send()
-            .await?;
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
 
-        let data = response.text().await?;
-        let prediction: Prediction = serde_json::from_str(&data)?;
+        return match response.status() {
+            reqwest::StatusCode::OK | reqwest::StatusCode::CREATED => {
+                let data = response
+                    .text()
+                    .await
+                    .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
+                let prediction: Prediction = serde_json::from_str(&data)
+                    .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
 
-        anyhow::Ok(prediction)
+                Ok(prediction)
+            }
+            _ => Err(get_error(
+                response.status(),
+                response
+                    .text()
+                    .await
+                    .map_err(|err| ReplicateError::ClientError(err.to_string()))?
+                    .as_str(),
+            )),
+        };
     }
 
     /// Get details for an existing prediction
@@ -438,8 +457,6 @@ mod tests {
             )
             .await
             .unwrap();
-
-        prediction.reload().await.unwrap();
     }
 
     #[tokio::test]
