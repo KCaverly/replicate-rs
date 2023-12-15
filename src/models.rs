@@ -7,6 +7,7 @@
 //! - [List all Public Models](https://replicate.com/docs/reference/http#models.list)
 //!
 use anyhow::anyhow;
+use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -135,6 +136,31 @@ impl ModelClient {
         let model: Model = serde_json::from_str(&data)
             .map_err(|err| ReplicateError::SerializationError(err.to_string()))?;
         Ok(model)
+    }
+
+    /// Delete specific model version
+    pub async fn delete_version(
+        &self,
+        owner: &str,
+        name: &str,
+        version_id: &str,
+    ) -> ReplicateResult<()> {
+        let api_key = self.client.get_api_key()?;
+        let base_url = self.client.get_base_url();
+        let endpoint = format!("{base_url}/models/{owner}/{name}/versions/{version_id}");
+        let client = reqwest::Client::new();
+        let response = client
+            .delete(endpoint)
+            .header("Authorization", format!("Token {api_key}"))
+            .send()
+            .await
+            .map_err(|err| ReplicateError::ClientError(err.to_string()))?;
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(ReplicateError::Misc("delete request failed".to_string()))
+        }
     }
 
     /// Retrieve details for latest version of a specific model
