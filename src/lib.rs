@@ -21,8 +21,7 @@
 //! use serde::Serialize;
 //! use serde_json::json;
 //!
-//! // The library is async agnostic, so you should be able to use any async runtime you please
-//! //tokio_test::block_on(async move {
+//! // The library is runtime agnostic, so you should be able to use any async runtime you please
 //! #[tokio::main]
 //! async fn main() {
 //!     tokio::spawn(async move {
